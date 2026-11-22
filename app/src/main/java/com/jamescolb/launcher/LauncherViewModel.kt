@@ -137,6 +137,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         return account.imageTag?.let { client.userImageUrl(server.url, account.userId, it) }
     }
 
+    val appsFirst: StateFlow<Boolean> = settings.appsFirst
+
+    fun setAppsFirst(first: Boolean) = settings.setAppsFirst(first)
+
     val rememberUser: StateFlow<Boolean> = settings.rememberUser
 
     fun setRememberUser(remember: Boolean) = settings.setRememberUser(remember)

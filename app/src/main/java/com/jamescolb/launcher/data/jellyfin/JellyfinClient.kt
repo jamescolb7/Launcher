@@ -185,6 +185,34 @@ class JellyfinClient(
         ),
     ).items
 
+    /**
+     * Recently watched episodes, newest first, without images: used to date each series' latest
+     * activity so Next Up can be ordered alongside in-progress items.
+     */
+    suspend fun recentlyPlayedEpisodes(
+        baseUrl: String,
+        token: String,
+        userId: String,
+        limit: Int = 100,
+    ): List<BaseItemDto> {
+        val query = mapOf(
+            "userId" to userId,
+            "includeItemTypes" to "Episode",
+            "recursive" to true,
+            "filters" to "IsPlayed",
+            "sortBy" to "DatePlayed",
+            "sortOrder" to "Descending",
+            "limit" to limit,
+            "fields" to "SeriesId",
+            "enableUserData" to true,
+            "enableImages" to false,
+        )
+        return withLegacyFallback(
+            modern = { get<ItemsResult>(baseUrl, "/Items", token, query) },
+            legacy = { get<ItemsResult>(baseUrl, "/Users/$userId/Items", token, query - "userId") },
+        ).items
+    }
+
     /** Latest library items of one type, newest first. */
     suspend fun latest(
         baseUrl: String,

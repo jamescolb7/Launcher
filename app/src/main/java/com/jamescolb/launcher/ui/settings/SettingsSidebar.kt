@@ -106,6 +106,8 @@ fun SettingsSidebar(
     onOpenSystemSettings: () -> Unit,
     onPresetSelected: (AccentPreset) -> Unit,
     onAppHiddenChange: (String, Boolean) -> Unit,
+    appsFirst: Boolean,
+    onAppsFirstChange: (Boolean) -> Unit,
 ) {
     var page by remember { mutableStateOf(SettingsPage.Main) }
     LaunchedEffect(visible) { if (visible) page = SettingsPage.Main }
@@ -126,6 +128,8 @@ fun SettingsSidebar(
                     onOpenSystemSettings = onOpenSystemSettings,
                     onPresetSelected = onPresetSelected,
                     onOpenHiddenApps = { page = SettingsPage.HiddenApps },
+                    appsFirst = appsFirst,
+                    onAppsFirstChange = onAppsFirstChange,
                 )
                 SettingsPage.HiddenApps -> HiddenAppsPage(
                     apps = allApps,
@@ -168,6 +172,8 @@ private fun MainPage(
     onOpenSystemSettings: () -> Unit,
     onPresetSelected: (AccentPreset) -> Unit,
     onOpenHiddenApps: () -> Unit,
+    appsFirst: Boolean,
+    onAppsFirstChange: (Boolean) -> Unit,
 ) {
     val firstItem = remember { FocusRequester() }
     InitialFocus(firstItem)
@@ -206,6 +212,15 @@ private fun MainPage(
                 summary = if (hiddenCount == 1) "1 app hidden" else "$hiddenCount apps hidden",
                 trailingIcon = R.drawable.ic_chevron_right,
                 onClick = onOpenHiddenApps,
+            )
+        }
+        item {
+            SettingsRow(
+                icon = R.drawable.ic_swap_horiz,
+                title = "Apps above Jellyfin",
+                summary = if (appsFirst) "Apps row first, then Jellyfin" else "Jellyfin rows first, then apps",
+                onClick = { onAppsFirstChange(!appsFirst) },
+                trailing = { ToggleSwitch(checked = appsFirst) },
             )
         }
 

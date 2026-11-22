@@ -110,6 +110,7 @@ private fun LauncherApp(
     val hiddenApps by viewModel.hiddenApps.collectAsStateWithLifecycle()
     val rememberUser by viewModel.rememberUser.collectAsStateWithLifecycle()
     val userPickRequired by viewModel.userPickRequired.collectAsStateWithLifecycle()
+    val appsFirst by viewModel.appsFirst.collectAsStateWithLifecycle()
 
     var screen by rememberSaveable { mutableStateOf(Screen.Home) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
@@ -207,6 +208,7 @@ private fun LauncherApp(
                         movingPackage = movingPackage,
                         onMoveApp = viewModel::moveApp,
                         onMoveDone = { movingPackage = null },
+                        appsFirst = appsFirst,
                         settingsTileFocus = settingsTileFocus,
                     )
                     Screen.AllApps -> AllAppsScreen(
@@ -252,6 +254,8 @@ private fun LauncherApp(
                 },
                 onPresetSelected = viewModel::setPreset,
                 onAppHiddenChange = viewModel::setAppHidden,
+                appsFirst = appsFirst,
+                onAppsFirstChange = viewModel::setAppsFirst,
             )
             AppOptionsPanel(
                 app = optionsApp,

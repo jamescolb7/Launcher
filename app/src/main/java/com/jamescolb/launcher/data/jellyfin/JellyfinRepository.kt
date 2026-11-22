@@ -25,7 +25,8 @@ class JellyfinRepository(private val client: JellyfinClient) {
         val userId = account.userId
 
         val resume = async { runCatching { client.resume(url, token, userId) } }
-        val nextUp = async { runCatching { client.nextUp(url, token, userId, account.rewatching) } }
+        val nextUp = async { runCatching { client.nextUp(url, token, userId, account.rewatching, limit = 24) } }
+        val recentlyPlayed = async { runCatching { client.recentlyPlayedEpisodes(url, token, userId) } }
         val shows = async {
             runCatching { client.latest(url, token, userId, "Series", "DateLastContentAdded,SortName") }
         }
@@ -38,8 +39,13 @@ class JellyfinRepository(private val client: JellyfinClient) {
         val continueWatching = if (resumeResult.isFailure && nextUpResult.isFailure) {
             MediaRow(error = resumeResult.exceptionOrNull()?.message)
         } else {
-            MediaRow(mergeContinueWatching(resumeResult.getOrDefault(emptyList()), nextUpResult.getOrDefault(emptyList()))
-                .map { it.toMediaItem(url) })
+            MediaRow(
+                mergeContinueWatching(
+                    resume = resumeResult.getOrDefault(emptyList()),
+                    nextUp = nextUpResult.getOrDefault(emptyList()),
+                    recentlyPlayed = recentlyPlayed.await().getOrDefault(emptyList()),
+                ).map { it.toMediaItem(url) },
+            )
         }
 
         HomeRows(
@@ -55,14 +61,40 @@ class JellyfinRepository(private val client: JellyfinClient) {
     )
 
     /**
-     * In-progress items first (the server orders them by last played), then Next Up episodes for
-     * series that aren't already represented.
+     * In-progress items and Next Up episodes in one list, newest activity first.
+     *
+     * In-progress items are dated by when they were last played. A Next Up episode is dated by
+     * the last time anything in its series was watched (from [recentlyPlayed]), so a show you
+     * just finished, and are now rewatching, sorts by how recently you watched it rather than
+     * landing after every paused item. Series already in progress are not repeated, and each
+     * series gets one Next Up card, preferring an unwatched episode over a rewatch.
      */
-    private fun mergeContinueWatching(resume: List<BaseItemDto>, nextUp: List<BaseItemDto>): List<BaseItemDto> {
-        val seenSeries = resume.mapNotNull { it.seriesId }.toSet()
-        val seenIds = resume.map { it.id }.toSet()
-        val extra = nextUp.filter { it.id !in seenIds && (it.seriesId == null || it.seriesId !in seenSeries) }
-        return (resume + extra).take(MAX_CONTINUE_WATCHING)
+    private fun mergeContinueWatching(
+        resume: List<BaseItemDto>,
+        nextUp: List<BaseItemDto>,
+        recentlyPlayed: List<BaseItemDto>,
+    ): List<BaseItemDto> {
+        val seriesLastPlayed = HashMap<String, String>()
+        for (episode in recentlyPlayed) {
+            val series = episode.seriesId ?: continue
+            val date = episode.userData?.lastPlayedDate ?: continue
+            seriesLastPlayed.putIfAbsent(series, date) // newest first, so keep the first seen
+        }
+
+        val resumeIds = resume.map { it.id }.toSet()
+        val resumeSeries = resume.mapNotNull { it.seriesId }.toSet()
+        val nextUpPerSeries = nextUp
+            .filter { it.id !in resumeIds && (it.seriesId == null || it.seriesId !in resumeSeries) }
+            .groupBy { it.seriesId ?: it.id }
+            .map { (_, episodes) -> episodes.firstOrNull { it.userData?.played != true } ?: episodes.first() }
+
+        // ISO-8601 timestamps sort correctly as strings; undated items go last.
+        val dated = resume.map { (it.userData?.lastPlayedDate ?: "") to it } +
+            nextUpPerSeries.map { (seriesLastPlayed[it.seriesId] ?: "") to it }
+        return dated
+            .sortedByDescending { it.first }
+            .map { it.second }
+            .take(MAX_CONTINUE_WATCHING)
     }
 
     private fun BaseItemDto.toMediaItem(url: String): MediaItem {

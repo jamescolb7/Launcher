@@ -69,7 +69,7 @@ import com.jamescolb.launcher.ui.theme.TextSecondary
 
 
 val ScreenPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 28.dp)
-private val RowSpacing = Arrangement.spacedBy(20.dp)
+private val RowSpacing = Arrangement.spacedBy(16.dp)
 
 /** Side padding inside the rows, so focused (scaled-up) cards are never clipped at the edges. */
 private val RowContentPadding = PaddingValues(horizontal = 48.dp, vertical = 10.dp)
@@ -100,6 +100,8 @@ fun HomeScreen(
     movingPackage: String?,
     onMoveApp: (String, Int) -> Unit,
     onMoveDone: () -> Unit,
+    /** Show the Apps row above the Jellyfin rows instead of below them. */
+    appsFirst: Boolean = false,
     settingsTileFocus: FocusRequester = remember { FocusRequester() },
 ) {
     // While moving an app, Back (like OK) just finishes the move.
@@ -114,9 +116,11 @@ fun HomeScreen(
     // Fresh state once apps first arrive, so the row starts at the first app.
     val appsFocus = remember(apps.isEmpty()) { RowFocusState() }
 
-    // Focus the first card once there's something to focus: the connect card when signed out,
-    // otherwise the first media card once rows have loaded (apps as a last resort).
+    // Focus the first card once there's something to focus: the first app when apps are on top;
+    // otherwise the connect card when signed out, or the first media card once rows have loaded
+    // (apps as a last resort).
     val firstTarget = when {
+        appsFirst && apps.isNotEmpty() -> "apps"
         !home.signedIn -> "connect"
         rows.continueWatching.items.isNotEmpty() -> "cw"
         rows.latestShows.items.isNotEmpty() -> "shows"
@@ -197,6 +201,26 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                 ) {
+                    fun androidx.compose.foundation.lazy.LazyListScope.appsRowItem() {
+                        item(key = "apps") {
+                            CompositionLocalProvider(LocalBringIntoViewSpec provides rowsDefaultSpec) {
+                                AppsRow(
+                                    apps = apps,
+                                    focus = appsFocus,
+                                    firstItem = firstItem.takeIf { firstTarget == "apps" },
+                                    movingPackage = movingPackage,
+                                    onAppClick = onAppClick,
+                                    onAppOptions = { app -> onAppOptions(app, appsFocus.requester(app.packageName)) },
+                                    onMoveApp = onMoveApp,
+                                    onMoveDone = onMoveDone,
+                                    onAllAppsClick = onAllAppsClick,
+                                    onHeroChange = onHeroChange,
+                                )
+                            }
+                        }
+                    }
+
+                    if (appsFirst) appsRowItem()
                     item(key = "continue") {
                         CompositionLocalProvider(LocalBringIntoViewSpec provides rowsDefaultSpec) {
                             if (!home.signedIn) {
@@ -251,22 +275,7 @@ fun HomeScreen(
                             }
                         }
                     }
-                    item(key = "apps") {
-                        CompositionLocalProvider(LocalBringIntoViewSpec provides rowsDefaultSpec) {
-                            AppsRow(
-                                apps = apps,
-                                focus = appsFocus,
-                                firstItem = firstItem.takeIf { firstTarget == "apps" },
-                                movingPackage = movingPackage,
-                                onAppClick = onAppClick,
-                                onAppOptions = { app -> onAppOptions(app, appsFocus.requester(app.packageName)) },
-                                onMoveApp = onMoveApp,
-                                onMoveDone = onMoveDone,
-                                onAllAppsClick = onAllAppsClick,
-                                onHeroChange = onHeroChange,
-                            )
-                        }
-                    }
+                    if (!appsFirst) appsRowItem()
                 }
             }
         }

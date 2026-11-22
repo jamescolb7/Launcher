@@ -102,6 +102,15 @@ class SettingsRepository(context: Context) {
         prefs.edit { putString(KEY_ACTIVE_ACCOUNT, key) }
     }
 
+    /** Show the Apps row above the Jellyfin rows on the home screen. */
+    private val _appsFirst = MutableStateFlow(prefs.getBoolean(KEY_APPS_FIRST, false))
+    val appsFirst: StateFlow<Boolean> = _appsFirst.asStateFlow()
+
+    fun setAppsFirst(first: Boolean) {
+        _appsFirst.value = first
+        prefs.edit { putBoolean(KEY_APPS_FIRST, first) }
+    }
+
     /** When false, the user picker is shown at start-up / wake instead of reusing the last user. */
     private val _rememberUser = MutableStateFlow(prefs.getBoolean(KEY_REMEMBER_USER, true))
     val rememberUser: StateFlow<Boolean> = _rememberUser.asStateFlow()
@@ -143,6 +152,7 @@ class SettingsRepository(context: Context) {
         const val KEY_HIDDEN_APPS = "hidden_apps"
         const val KEY_APP_ORDER = "app_order"
         const val KEY_REMEMBER_USER = "remember_user"
+        const val KEY_APPS_FIRST = "apps_first"
         const val ORDER_SEPARATOR = ","
 
         /** Android TV / Google TV / phone system settings; reachable via "More Settings" instead. */
