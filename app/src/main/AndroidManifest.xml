@@ -9,6 +9,10 @@
         android:name="android.software.leanback"
         android:required="false" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lets the app-options menu open the system uninstall dialog. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
     <!-- Package visibility (Android 11+): see every launchable app, TV and phone style. -->
     <queries>
         <intent>
@@ -19,6 +23,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Jellyfin items open in Wholphin. -->
+        <package android:name="com.github.damontecres.wholphin" />
     </queries>
 
     <application
@@ -27,7 +33,9 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Launcher">
+        android:theme="@style/Theme.Launcher"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="28">
         <activity
             android:name=".MainActivity"
             android:exported="true"

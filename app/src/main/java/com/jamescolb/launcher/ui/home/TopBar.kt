@@ -4,7 +4,14 @@ import android.text.format.DateFormat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +33,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.jamescolb.launcher.R
+import com.jamescolb.launcher.ui.components.launcherSurfaceColors
 import com.jamescolb.launcher.ui.components.DrawableIcon
 import com.jamescolb.launcher.ui.components.focusedFill
 import com.jamescolb.launcher.ui.theme.LocalAccent
@@ -39,7 +47,9 @@ import java.util.Locale
 fun TopBar(
     userName: String,
     onProfileClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
+    settingsFocus: FocusRequester = remember { FocusRequester() },
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -53,6 +63,8 @@ fun TopBar(
         )
         Spacer(Modifier.weight(1f))
         ProfileButton(userName = userName, onClick = onProfileClick)
+        Spacer(Modifier.width(8.dp))
+        SettingsButton(onClick = onSettingsClick, modifier = Modifier.focusRequester(settingsFocus))
         Spacer(Modifier.width(16.dp))
         DrawableIcon(R.drawable.ic_wifi, tint = TextPrimary, size = 22.dp, contentDescription = "Wi-Fi")
         Spacer(Modifier.width(14.dp))
@@ -68,7 +80,7 @@ private fun ProfileButton(userName: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = ClickableSurfaceDefaults.shape(shape),
-        colors = ClickableSurfaceDefaults.colors(
+        colors = launcherSurfaceColors(
             containerColor = Color.Transparent,
             contentColor = TextPrimary,
             focusedContainerColor = focusedFill(accent),
@@ -87,6 +99,32 @@ private fun ProfileButton(userName: String, onClick: () -> Unit) {
         ) {
             DrawableIcon(R.drawable.ic_account_circle, size = 24.dp)
             Text(userName, style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+/** Round gear button that opens the settings sidebar. */
+@Composable
+private fun SettingsButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val accent = LocalAccent.current
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(38.dp),
+        shape = ClickableSurfaceDefaults.shape(CircleShape),
+        colors = launcherSurfaceColors(
+            containerColor = Color.Transparent,
+            contentColor = TextPrimary,
+            focusedContainerColor = focusedFill(accent),
+            focusedContentColor = Color.White,
+        ),
+        border = ClickableSurfaceDefaults.border(
+            border = Border(BorderStroke(1.dp, Color.Transparent), shape = CircleShape),
+            focusedBorder = Border(BorderStroke(2.dp, accent), shape = CircleShape),
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            DrawableIcon(R.drawable.ic_settings, size = 22.dp, contentDescription = "Settings")
         }
     }
 }

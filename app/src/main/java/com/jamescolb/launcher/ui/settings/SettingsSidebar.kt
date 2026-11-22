@@ -60,8 +60,11 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.jamescolb.launcher.R
 import com.jamescolb.launcher.data.InstalledApp
-import com.jamescolb.launcher.data.JellyfinUser
+import com.jamescolb.launcher.data.JellyfinAccount
+import com.jamescolb.launcher.data.JellyfinServer
+import com.jamescolb.launcher.ui.components.launcherSurfaceColors
 import com.jamescolb.launcher.ui.components.DrawableIcon
+import com.jamescolb.launcher.ui.components.SidePanel
 import com.jamescolb.launcher.ui.components.focusedFill
 import com.jamescolb.launcher.ui.theme.AccentPreset
 import com.jamescolb.launcher.ui.theme.AccentPresets
@@ -71,8 +74,22 @@ import com.jamescolb.launcher.ui.theme.TextSecondary
 
 private enum class SettingsPage { Main, HiddenApps }
 
-private val SidebarWidth = 380.dp
-private val SidebarColor = Color(0xFF1B1C20)
+/** Jellyfin state and actions for the sidebar's Jellyfin section. */
+class JellyfinSettings(
+    val server: JellyfinServer?,
+    /** Accounts on the active server. */
+    val accounts: List<JellyfinAccount>,
+    val activeAccount: JellyfinAccount?,
+    val onServerClick: () -> Unit,
+    val onAccountSelected: (String) -> Unit,
+    val onAddUser: () -> Unit,
+    val onSignOut: () -> Unit,
+    val onRewatchingChange: (Boolean) -> Unit,
+    /** Reuse the last user at start-up; when off, the user picker is shown every time. */
+    val rememberUser: Boolean,
+    val onRememberUserChange: (Boolean) -> Unit,
+)
+
 
 /**
  * Settings as a panel sliding in from the right, over a dimmed home screen (like the stock
@@ -82,69 +99,39 @@ private val SidebarColor = Color(0xFF1B1C20)
 fun SettingsSidebar(
     visible: Boolean,
     preset: AccentPreset,
-    serverUrl: String,
-    users: List<JellyfinUser>,
-    activeUserId: String?,
+    jellyfin: JellyfinSettings,
     allApps: List<InstalledApp>,
     hiddenApps: Set<String>,
     onClose: () -> Unit,
     onOpenSystemSettings: () -> Unit,
     onPresetSelected: (AccentPreset) -> Unit,
-    onServerUrlChange: (String) -> Unit,
-    onUserSelected: (String) -> Unit,
-    onQuickConnectApproved: () -> Unit,
     onAppHiddenChange: (String, Boolean) -> Unit,
 ) {
-    Box(Modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = visible, enter = fadeIn(tween(250)), exit = fadeOut(tween(200))) {
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)))
-        }
-        AnimatedVisibility(
-            visible = visible,
-            modifier = Modifier.align(Alignment.CenterEnd),
-            enter = slideInHorizontally(tween(280)) { it } + fadeIn(tween(200)),
-            exit = slideOutHorizontally(tween(220)) { it } + fadeOut(tween(200)),
-        ) {
-            var page by remember { mutableStateOf(SettingsPage.Main) }
-            BackHandler(enabled = visible) {
-                if (page != SettingsPage.Main) page = SettingsPage.Main else onClose()
-            }
-            Box(
-                Modifier
-                    .width(SidebarWidth)
-                    .fillMaxHeight()
-                    .background(SidebarColor)
-                    // Keep D-pad focus inside the panel while it is open (but let focus go back to
-                    // the home screen once it's closing).
-                    .focusProperties { onExit = { if (visible) cancelFocusChange() } }
-                    .focusGroup(),
-            ) {
-                AnimatedContent(
-                    targetState = page,
-                    transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
-                    label = "settingsPage",
-                ) { current ->
-                    when (current) {
-                        SettingsPage.Main -> MainPage(
-                            preset = preset,
-                            serverUrl = serverUrl,
-                            users = users,
-                            activeUserId = activeUserId,
-                            hiddenCount = allApps.count { it.packageName in hiddenApps },
-                            onOpenSystemSettings = onOpenSystemSettings,
-                            onPresetSelected = onPresetSelected,
-                            onServerUrlChange = onServerUrlChange,
-                            onUserSelected = onUserSelected,
-                            onQuickConnectApproved = onQuickConnectApproved,
-                            onOpenHiddenApps = { page = SettingsPage.HiddenApps },
-                        )
-                        SettingsPage.HiddenApps -> HiddenAppsPage(
-                            apps = allApps,
-                            hidden = hiddenApps,
-                            onToggle = onAppHiddenChange,
-                        )
-                    }
-                }
+    var page by remember { mutableStateOf(SettingsPage.Main) }
+    LaunchedEffect(visible) { if (visible) page = SettingsPage.Main }
+    SidePanel(
+        visible = visible,
+        onBack = { if (page != SettingsPage.Main) page = SettingsPage.Main else onClose() },
+    ) {
+        AnimatedContent(
+            targetState = page,
+            transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
+            label = "settingsPage",
+        ) { current ->
+            when (current) {
+                SettingsPage.Main -> MainPage(
+                    preset = preset,
+                    jellyfin = jellyfin,
+                    hiddenCount = allApps.count { it.packageName in hiddenApps },
+                    onOpenSystemSettings = onOpenSystemSettings,
+                    onPresetSelected = onPresetSelected,
+                    onOpenHiddenApps = { page = SettingsPage.HiddenApps },
+                )
+                SettingsPage.HiddenApps -> HiddenAppsPage(
+                    apps = allApps,
+                    hidden = hiddenApps,
+                    onToggle = onAppHiddenChange,
+                )
             }
         }
     }
@@ -152,16 +139,16 @@ fun SettingsSidebar(
 
 /** Requests focus on [requester] once the page has laid out. */
 @Composable
-private fun InitialFocus(requester: FocusRequester) {
+internal fun InitialFocus(requester: FocusRequester) {
     LaunchedEffect(Unit) {
         withFrameNanos { }
         runCatching { requester.requestFocus() }
     }
 }
 
-private val PagePadding = PaddingValues(start = 20.dp, end = 20.dp, top = 32.dp, bottom = 32.dp)
+internal val PagePadding = PaddingValues(start = 20.dp, end = 20.dp, top = 32.dp, bottom = 32.dp)
 
-private fun LazyListScope.pageHeader(title: String, subtitle: String? = null) {
+internal fun LazyListScope.pageHeader(title: String, subtitle: String? = null) {
     item {
         Column(Modifier.padding(start = 12.dp, bottom = 12.dp)) {
             Text(title, style = MaterialTheme.typography.headlineSmall, color = TextPrimary)
@@ -176,19 +163,12 @@ private fun LazyListScope.pageHeader(title: String, subtitle: String? = null) {
 @Composable
 private fun MainPage(
     preset: AccentPreset,
-    serverUrl: String,
-    users: List<JellyfinUser>,
-    activeUserId: String?,
+    jellyfin: JellyfinSettings,
     hiddenCount: Int,
     onOpenSystemSettings: () -> Unit,
     onPresetSelected: (AccentPreset) -> Unit,
-    onServerUrlChange: (String) -> Unit,
-    onUserSelected: (String) -> Unit,
-    onQuickConnectApproved: () -> Unit,
     onOpenHiddenApps: () -> Unit,
 ) {
-    var editingServer by remember { mutableStateOf(false) }
-    var quickConnect by remember { mutableStateOf(false) }
     val firstItem = remember { FocusRequester() }
     InitialFocus(firstItem)
 
@@ -233,31 +213,66 @@ private fun MainPage(
         item {
             SettingsRow(
                 icon = R.drawable.ic_dns,
-                title = "Server",
-                summary = serverUrl.ifEmpty { "Not set" },
+                title = jellyfin.server?.name ?: "Server",
+                summary = jellyfin.server?.url ?: "Not connected",
                 trailingIcon = R.drawable.ic_chevron_right,
-                onClick = { editingServer = true },
+                onClick = jellyfin.onServerClick,
             )
         }
-
-        item { SectionTitle("Users") }
-        items(users, key = { it.id }) { user ->
+        val active = jellyfin.activeAccount
+        items(jellyfin.accounts, key = { it.key }) { account ->
             SettingsRow(
                 icon = R.drawable.ic_person,
-                title = user.name,
-                summary = if (user.id == activeUserId) "Current user" else null,
-                trailingIcon = if (user.id == activeUserId) R.drawable.ic_check else null,
-                onClick = { onUserSelected(user.id) },
+                title = account.name,
+                summary = if (account.key == active?.key) "Current user" else "Switch to this user",
+                trailingIcon = if (account.key == active?.key) R.drawable.ic_check else null,
+                onClick = { jellyfin.onAccountSelected(account.key) },
             )
+        }
+        if (active != null) {
+            item(key = "rewatching") {
+                SettingsRow(
+                    icon = R.drawable.ic_link,
+                    title = "Rewatching in Next Up",
+                    summary = "Include shows you've already finished (${active.name})",
+                    onClick = { jellyfin.onRewatchingChange(!active.rewatching) },
+                    trailing = { ToggleSwitch(checked = active.rewatching) },
+                )
+            }
+        }
+        if (jellyfin.accounts.isNotEmpty()) {
+            item(key = "remember-user") {
+                SettingsRow(
+                    icon = R.drawable.ic_account_circle,
+                    title = "Remember user",
+                    summary = if (jellyfin.rememberUser) {
+                        "Start with the last user"
+                    } else {
+                        "Choose who's watching every time"
+                    },
+                    onClick = { jellyfin.onRememberUserChange(!jellyfin.rememberUser) },
+                    trailing = { ToggleSwitch(checked = jellyfin.rememberUser) },
+                )
+            }
         }
         item {
             SettingsRow(
                 icon = R.drawable.ic_add,
                 title = "Add user",
-                summary = "Sign in with Quick Connect",
-                trailingIcon = R.drawable.ic_link,
-                onClick = { quickConnect = true },
+                summary = "Quick Connect or password",
+                trailingIcon = R.drawable.ic_chevron_right,
+                onClick = jellyfin.onAddUser,
             )
+        }
+        if (active != null) {
+            item(key = "sign-out") {
+                SettingsRow(
+                    icon = R.drawable.ic_open_in_new,
+                    title = "Sign out",
+                    summary = "Remove ${active.name} from this device",
+                    onClick = jellyfin.onSignOut,
+                )
+            }
         }
 
         item { SectionTitle("About") }
@@ -269,27 +284,6 @@ private fun MainPage(
                 onClick = {},
             )
         }
-    }
-
-    if (editingServer) {
-        ServerUrlDialog(
-            current = serverUrl,
-            onSave = {
-                onServerUrlChange(it)
-                editingServer = false
-            },
-            onDismiss = { editingServer = false },
-        )
-    }
-    if (quickConnect) {
-        QuickConnectDialog(
-            serverUrl = serverUrl,
-            onApproved = {
-                onQuickConnectApproved()
-                quickConnect = false
-            },
-            onDismiss = { quickConnect = false },
-        )
     }
 }
 
@@ -329,7 +323,7 @@ private fun HiddenAppsPage(
 }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
@@ -340,7 +334,7 @@ private fun SectionTitle(text: String) {
 
 /** A compact, full-width focusable settings entry. */
 @Composable
-private fun SettingsRow(
+internal fun SettingsRow(
     title: String,
     summary: String?,
     onClick: () -> Unit,
@@ -356,7 +350,7 @@ private fun SettingsRow(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = ClickableSurfaceDefaults.shape(shape),
-        colors = ClickableSurfaceDefaults.colors(
+        colors = launcherSurfaceColors(
             containerColor = Color.Transparent,
             contentColor = TextPrimary,
             focusedContainerColor = focusedFill(accent),
@@ -408,7 +402,7 @@ private fun SettingsRow(
 }
 
 @Composable
-private fun ToggleSwitch(checked: Boolean) {
+internal fun ToggleSwitch(checked: Boolean) {
     val accent = LocalAccent.current
     val track by animateColorAsState(
         if (checked) accent else Color.White.copy(alpha = 0.22f),
@@ -462,7 +456,7 @@ private fun PresetSwatch(preset: AccentPreset, selected: Boolean, onClick: () ->
         onClick = onClick,
         modifier = Modifier.size(36.dp),
         shape = ClickableSurfaceDefaults.shape(CircleShape),
-        colors = ClickableSurfaceDefaults.colors(
+        colors = launcherSurfaceColors(
             containerColor = preset.base,
             focusedContainerColor = preset.base,
         ),

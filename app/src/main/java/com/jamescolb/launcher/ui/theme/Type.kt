@@ -24,7 +24,7 @@ private fun inter(weight: FontWeight, size: Int, line: Int, spacing: Float = 0f)
 )
 
 /** Hero title: the large bold name in the middle of the screen. */
-val HeroTitle = inter(FontWeight.Bold, 56, 64, -1f)
+val HeroTitle = inter(FontWeight.Bold, 44, 52, -0.6f)
 
 /** Small accent label above the hero title ("TV Show", "App"). */
 val HeroCategory = inter(FontWeight.Medium, 18, 24, 0.2f)

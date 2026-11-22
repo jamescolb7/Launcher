@@ -28,7 +28,16 @@ import com.jamescolb.launcher.ui.theme.TextPrimary
 import com.jamescolb.launcher.ui.theme.TextSecondary
 
 @Composable
-fun AllAppsScreen(apps: List<InstalledApp>, onAppClick: (InstalledApp) -> Unit) {
+fun AllAppsScreen(
+    apps: List<InstalledApp>,
+    onAppClick: (InstalledApp) -> Unit,
+    /** Long-press / options key on an app; the requester puts focus back on its card. */
+    onAppOptions: (InstalledApp, FocusRequester) -> Unit,
+) {
+    // The grid is alphabetical; the home row has the user's own order.
+    val sorted = remember(apps) { apps.sortedBy { it.label.lowercase() } }
+    val requesters = remember { HashMap<String, FocusRequester>() }
+    fun requester(pkg: String) = requesters.getOrPut(pkg) { FocusRequester() }
     val first = remember { FocusRequester() }
     LaunchedEffect(apps.isNotEmpty()) { if (apps.isNotEmpty()) runCatching { first.requestFocus() } }
 
@@ -52,12 +61,15 @@ fun AllAppsScreen(apps: List<InstalledApp>, onAppClick: (InstalledApp) -> Unit) 
             verticalArrangement = Arrangement.spacedBy(18.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
-            itemsIndexed(apps, key = { _, app -> app.packageName }) { index, app ->
+            itemsIndexed(sorted, key = { _, app -> app.packageName }) { index, app ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AppCard(
                         app = app,
                         onClick = { onAppClick(app) },
-                        modifier = if (index == 0) Modifier.focusRequester(first) else Modifier,
+                        onOptions = { onAppOptions(app, requester(app.packageName)) },
+                        modifier = Modifier
+                            .focusRequester(requester(app.packageName))
+                            .then(if (index == 0) Modifier.focusRequester(first) else Modifier),
                     )
                     Text(
                         text = app.label,

@@ -46,7 +46,7 @@ fun HeroSection(content: HeroContent, modifier: Modifier = Modifier) {
                 category = hero.item.type.label,
                 title = hero.item.title,
                 subtitle = hero.item.subtitle,
-                description = hero.item.overview,
+                description = hero.item.overview.orEmpty(),
             )
             is HeroContent.App -> HeroText(
                 category = "App",
@@ -79,7 +79,7 @@ private fun HeroText(category: String, title: String, subtitle: String?, descrip
     val accent = LocalAccent.current
     // The Box drops AnimatedContent's min-width so the column can stay narrower than the screen.
     // Text keeps to roughly the left half; the right half is left for the backdrop art.
-    Box { Column(Modifier.widthIn(max = 600.dp)) {
+    Box { Column(Modifier.widthIn(max = 640.dp)) {
         Text(category, style = HeroCategory, color = accent)
         Spacer(Modifier.height(4.dp))
         Text(
@@ -100,8 +100,8 @@ private fun HeroText(category: String, title: String, subtitle: String?, descrip
                 modifier = Modifier.widthIn(max = HeroTextWidth),
             )
         }
-        Spacer(Modifier.height(8.dp))
-        Text(
+        if (description.isNotEmpty()) Spacer(Modifier.height(8.dp))
+        if (description.isNotEmpty()) Text(
             text = description,
             style = HeroBody,
             color = TextSecondary,

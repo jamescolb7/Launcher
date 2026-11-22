@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
@@ -30,6 +31,8 @@ data class InstalledApp(
     /** Approximate brand color, used to tint the app's name on the card. */
     val brandColor: Color,
     val launchIntent: Intent,
+    /** Preinstalled system app; these can't be uninstalled by the user. */
+    val isSystem: Boolean = false,
 )
 
 /** Reads the launchable apps from PackageManager and keeps the list up to date. */
@@ -86,6 +89,8 @@ class AppRepository(private val context: Context) {
             banner = bannerDrawable?.toSafeBitmap(320, 180)?.asImageBitmap(),
             brandColor = KNOWN_BRAND_COLORS[pkg] ?: paletteColor(iconBitmap),
             launchIntent = launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            isSystem = activity.applicationInfo.flags and
+                (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0,
         )
     }
 

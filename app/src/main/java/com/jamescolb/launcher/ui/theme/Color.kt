@@ -8,7 +8,8 @@ val CardSurfaceFocused = Color(0xFF2A2C31)
 val TextPrimary = Color(0xFFE6E6EA)
 val TextSecondary = Color(0xB3E6E6EA)
 val TextMuted = Color(0x80E6E6EA)
-val OutlineIdle = Color(0x8CFFFFFF)
+/** Idle card outline: a dim gray that only just separates cards from the background. */
+val OutlineIdle = Color(0x38FFFFFF)
 val ProgressTrack = Color(0xFFD9D9DE)
 
 /**
