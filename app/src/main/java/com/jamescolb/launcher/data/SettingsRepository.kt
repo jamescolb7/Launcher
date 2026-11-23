@@ -160,6 +160,7 @@ class SettingsRepository(context: Context) {
             "com.android.tv.settings",
             "com.google.android.tv.settings",
             "com.android.settings",
+            "com.amazon.tv.settings.v2", // Fire TV Settings
         )
     }
 }

@@ -12,6 +12,25 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Lets the app-options menu open the system uninstall dialog. -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- Start on this launcher (and restore the Home button override) after a reboot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!--
+        Optional, granted only over ADB (`pm grant ... WRITE_SECURE_SETTINGS`): lets the launcher
+        switch its Home button override on itself, which Fire OS needs because its Accessibility
+        settings don't list third-party services, and turn it back on after Fire OS disables it.
+    -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <!--
+        Optional, granted only over ADB (`appops set ... GET_USAGE_STATS allow`): the Home button
+        fallback for Fire OS builds that won't run the accessibility service (HomeWatcherService).
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Package visibility (Android 11+): see every launchable app, TV and phone style. -->
     <queries>
@@ -22,6 +41,11 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- Needed to tell which app the system treats as the home screen. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
         </intent>
         <!-- Jellyfin items open in Wholphin. -->
         <package android:name="com.github.damontecres.wholphin" />
@@ -40,6 +64,10 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:clearTaskOnLaunch="true"
+            android:resumeWhilePausing="true"
+            android:excludeFromRecents="true"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|density"
             tools:ignore="DiscouragedApi,LockedOrientationActivity">
@@ -57,6 +85,42 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Home button override for Fire OS / Google TV (see HomeOverrideService). -->
+        <service
+            android:name=".system.HomeOverrideService"
+            android:exported="true"
+            android:label="@string/home_override_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/home_override_service" />
+        </service>
+
+        <!-- Home button fallback using usage access (see HomeWatcherService). -->
+        <service
+            android:name=".system.HomeWatcherService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            tools:targetApi="34">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Opens this launcher when the remote's Home button shows the built-in home screen" />
+        </service>
+
+        <receiver
+            android:name=".system.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <!-- After an update, restart the Home button override / fallback. -->
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

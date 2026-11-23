@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Launcher</string>
+    <string name="home_override_label">Launcher Home button</string>
+    <string name="home_override_description">Opens this launcher when the remote\'s Home button shows the built-in home screen. It only notices which app is in front; it does not read screen content or send any data.</string>
+    <string name="home_watcher_channel">Home button</string>
+    <string name="home_watcher_title">Home button opens this launcher</string>
+    <string name="home_watcher_text">Watching for the built-in home screen</string>
 </resources>

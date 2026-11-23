@@ -65,6 +65,7 @@ import com.jamescolb.launcher.data.JellyfinServer
 import com.jamescolb.launcher.ui.components.launcherSurfaceColors
 import com.jamescolb.launcher.ui.components.DrawableIcon
 import com.jamescolb.launcher.ui.components.SidePanel
+import com.jamescolb.launcher.system.LauncherSetup
 import com.jamescolb.launcher.ui.components.focusedFill
 import com.jamescolb.launcher.ui.theme.AccentPreset
 import com.jamescolb.launcher.ui.theme.AccentPresets
@@ -72,7 +73,7 @@ import com.jamescolb.launcher.ui.theme.LocalAccent
 import com.jamescolb.launcher.ui.theme.TextPrimary
 import com.jamescolb.launcher.ui.theme.TextSecondary
 
-private enum class SettingsPage { Main, HiddenApps }
+private enum class SettingsPage { Main, HiddenApps, LauncherSetup }
 
 /** Jellyfin state and actions for the sidebar's Jellyfin section. */
 class JellyfinSettings(
@@ -128,6 +129,7 @@ fun SettingsSidebar(
                     onOpenSystemSettings = onOpenSystemSettings,
                     onPresetSelected = onPresetSelected,
                     onOpenHiddenApps = { page = SettingsPage.HiddenApps },
+                    onOpenLauncherSetup = { page = SettingsPage.LauncherSetup },
                     appsFirst = appsFirst,
                     onAppsFirstChange = onAppsFirstChange,
                 )
@@ -136,6 +138,7 @@ fun SettingsSidebar(
                     hidden = hiddenApps,
                     onToggle = onAppHiddenChange,
                 )
+                SettingsPage.LauncherSetup -> LauncherSetupPage()
             }
         }
     }
@@ -172,6 +175,7 @@ private fun MainPage(
     onOpenSystemSettings: () -> Unit,
     onPresetSelected: (AccentPreset) -> Unit,
     onOpenHiddenApps: () -> Unit,
+    onOpenLauncherSetup: () -> Unit,
     appsFirst: Boolean,
     onAppsFirstChange: (Boolean) -> Unit,
 ) {
@@ -179,6 +183,7 @@ private fun MainPage(
     InitialFocus(firstItem)
 
     val context = LocalContext.current
+    val isHome = remember { LauncherSetup.isDefaultHome(context) || LauncherSetup.isOverrideEnabled(context) }
     val version = remember {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
             .getOrNull() ?: "?"
@@ -205,6 +210,15 @@ private fun MainPage(
         item { PresetPicker(selected = preset, onSelected = onPresetSelected) }
 
         item { SectionTitle("Home screen") }
+        item {
+            SettingsRow(
+                icon = if (isHome) R.drawable.ic_check else R.drawable.ic_info,
+                title = "Launcher setup",
+                summary = if (isHome) "Home opens this launcher" else "Make this the home screen",
+                trailingIcon = R.drawable.ic_chevron_right,
+                onClick = onOpenLauncherSetup,
+            )
+        }
         item {
             SettingsRow(
                 icon = R.drawable.ic_grid,

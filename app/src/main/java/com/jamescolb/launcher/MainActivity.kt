@@ -42,6 +42,8 @@ import com.jamescolb.launcher.ui.signin.SignInScreen
 import com.jamescolb.launcher.data.JellyfinServer
 import com.jamescolb.launcher.data.MediaItem
 import com.jamescolb.launcher.data.WholphinLauncher
+import com.jamescolb.launcher.system.HomeRedirect
+import com.jamescolb.launcher.system.LauncherSetup
 import com.jamescolb.launcher.ui.theme.LauncherTheme
 
 enum class Screen { Home, AllApps, Profiles, SignIn }
@@ -69,6 +71,9 @@ class MainActivity : ComponentActivity() {
         viewModel.refreshApps()
         // Pick up watch progress changed in Wholphin (or elsewhere).
         viewModel.refreshHome()
+        // Fire OS switches accessibility services off when an app is updated or force-stopped;
+        // this also starts the usage-access fallback where the override can't run.
+        LauncherSetup.restoreOverrideIfWanted(this)
     }
 
     private fun openInWholphin(item: MediaItem) {
@@ -81,6 +86,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun launch(intent: Intent) {
+        // Some screens (e.g. Fire TV Settings) open via the stock home screen for a moment;
+        // don't let the Home button override bounce the user back here.
+        HomeRedirect.suppressFor()
         try {
             startActivity(intent)
         } catch (_: ActivityNotFoundException) {
