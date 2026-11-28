@@ -29,6 +29,11 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <!--
+        Optional, granted only over ADB (`appops set ... SYSTEM_ALERT_WINDOW allow`): covers the
+        stock home screen while the launcher is held back after a Home press (HomeCover).
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 

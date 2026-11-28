@@ -31,6 +31,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.jamescolb.launcher.R
+import com.jamescolb.launcher.system.HomeCover
 import com.jamescolb.launcher.system.HomeOverrideService
 import com.jamescolb.launcher.system.HomeRedirect
 import com.jamescolb.launcher.system.LauncherSetup
@@ -58,6 +59,7 @@ internal fun LauncherSetupPage() {
     val wanted = remember(tick) { LauncherSetup.isOverrideWanted(context) }
     val a11yRunning = remember(tick) { HomeOverrideService.isRunning }
     val usageAccess = remember(tick) { LauncherSetup.hasUsageAccess(context) }
+    val canCover = remember(tick) { HomeCover.canShow(context) }
     val watcherWorks = usageAccess && LauncherSetup.isWatcherSupported()
     val switchedOn = wanted || overrideOn
     val canWrite = remember(tick) { LauncherSetup.canWriteSecureSettings(context) }
@@ -162,6 +164,9 @@ internal fun LauncherSetupPage() {
         }
         if (usageAccess && platform == TvPlatform.FireOs) {
             item { InfoText("Step 2 is done: usage access is granted.") }
+        }
+        if (canCover && platform == TvPlatform.FireOs) {
+            item { InfoText("Step 3 is done: Amazon's home screen is covered while the launcher opens.") }
         }
         items(steps) { step ->
             InfoText(step.title)

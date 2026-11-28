@@ -42,6 +42,7 @@ import com.jamescolb.launcher.ui.signin.SignInScreen
 import com.jamescolb.launcher.data.JellyfinServer
 import com.jamescolb.launcher.data.MediaItem
 import com.jamescolb.launcher.data.WholphinLauncher
+import com.jamescolb.launcher.system.HomeCover
 import com.jamescolb.launcher.system.HomeRedirect
 import com.jamescolb.launcher.system.LauncherSetup
 import com.jamescolb.launcher.ui.theme.LauncherTheme
@@ -67,6 +68,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // We're in front: take down the cover put over the stock home screen, if any.
+        HomeCover.hide()
         // Package broadcasts aren't delivered while we're stopped; catch up on return.
         viewModel.refreshApps()
         // Pick up watch progress changed in Wholphin (or elsewhere).

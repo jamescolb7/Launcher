@@ -27,7 +27,8 @@ import com.jamescolb.launcher.R
  * brings the launcher back when a stock home screen shows up.
  *
  * Needs `adb shell appops set <pkg> GET_USAGE_STATS allow` once. Runs as a foreground service so
- * Fire OS doesn't kill it while another app is playing.
+ * Fire OS doesn't kill it while another app is playing. With "display over other apps" also
+ * granted, [HomeCover] hides the stock home screen while the launcher is on its way.
  */
 class HomeWatcherService : Service() {
     private val handler = Handler(Looper.getMainLooper())
@@ -53,10 +54,7 @@ class HomeWatcherService : Service() {
                 Intent.ACTION_SCREEN_ON -> {
                     setPolling(true)
                     // Waking up usually shows the stock home screen; bring ours back once it settles.
-                    handler.postDelayed(
-                        { if (stockHomeInFront) HomeRedirect.redirect(this@HomeWatcherService, force = true) },
-                        WAKE_DELAY_MS,
-                    )
+                    handler.postDelayed({ if (stockHomeInFront) bringLauncherBack(force = true) }, WAKE_DELAY_MS)
                 }
             }
         }
@@ -113,7 +111,13 @@ class HomeWatcherService : Service() {
         }
         val (pkg, cls) = front ?: return
         stockHomeInFront = StockHomes.isHomeActivity(pkg, cls)
-        if (stockHomeInFront) HomeRedirect.redirect(this, force = false)
+        if (stockHomeInFront) bringLauncherBack(force = false)
+    }
+
+    private fun bringLauncherBack(force: Boolean) {
+        // The launcher itself can take up to 5 s to appear after a Home press (see HomeCover);
+        // cover the stock home screen until it does.
+        if (HomeRedirect.redirect(this, force)) HomeCover.show(this)
     }
 
     private fun startInForeground() {

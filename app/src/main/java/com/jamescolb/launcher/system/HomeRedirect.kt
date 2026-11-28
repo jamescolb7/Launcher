@@ -29,11 +29,14 @@ object HomeRedirect {
         suppressUntil = SystemClock.elapsedRealtime() + ms
     }
 
-    /** [force] ignores [suppressFor] (used on wake-up), but never the one-launch-per-press debounce. */
-    fun redirect(context: Context, force: Boolean) {
+    /**
+     * [force] ignores [suppressFor] (used on wake-up), but never the one-launch-per-press debounce.
+     * Returns whether the launcher was asked to open.
+     */
+    fun redirect(context: Context, force: Boolean): Boolean {
         val now = SystemClock.elapsedRealtime()
-        if (!force && now < suppressUntil) return // we just opened something on purpose
-        if (now - lastRedirect < DEBOUNCE_MS) return // one launch per Home press
+        if (!force && now < suppressUntil) return false // we just opened something on purpose
+        if (now - lastRedirect < DEBOUNCE_MS) return false // one launch per Home press
         lastRedirect = now
         val intent = Intent(context, MainActivity::class.java)
             .setAction(Intent.ACTION_MAIN)
@@ -48,6 +51,6 @@ object HomeRedirect {
         // (system-only) STOP_APP_SWITCHES permission for up to 5 s, so on Fire OS the launcher can
         // arrive late. Sending the start through a PendingIntent used to get around that, but
         // current security patches (seen on Fire OS 6.7.1.1, 2025-11 patch) close that gap.
-        runCatching { context.startActivity(intent) }
+        return runCatching { context.startActivity(intent) }.isSuccess
     }
 }

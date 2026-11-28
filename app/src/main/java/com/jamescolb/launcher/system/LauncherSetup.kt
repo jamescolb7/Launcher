@@ -227,6 +227,11 @@ object LauncherSetup {
                         "block the override (the switch above says so)",
                     "adb shell appops set $pkg GET_USAGE_STATS allow",
                 ),
+                AdbStep(
+                    "3. Optional, with step 2: Fire OS holds the launcher back for a few seconds after " +
+                        "Home; this covers Amazon's home screen until it opens",
+                    "adb shell appops set $pkg SYSTEM_ALERT_WINDOW allow",
+                ),
             )
             else -> {
                 val stock = if (platform(context) == TvPlatform.GoogleTv) StockHomes.GOOGLE_TV else StockHomes.ANDROID_TV
