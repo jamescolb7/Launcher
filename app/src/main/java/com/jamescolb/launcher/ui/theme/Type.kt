@@ -24,22 +24,22 @@ private fun inter(weight: FontWeight, size: Int, line: Int, spacing: Float = 0f)
 )
 
 /** Hero title: the large bold name in the middle of the screen. */
-val HeroTitle = inter(FontWeight.Bold, 44, 52, -0.6f)
+val HeroTitle = inter(FontWeight.Bold, 32, 40, -0.4f)
 
 /** Small accent label above the hero title ("TV Show", "App"). */
-val HeroCategory = inter(FontWeight.Medium, 18, 24, 0.2f)
+val HeroCategory = inter(FontWeight.Medium, 14, 18, 0.2f)
 
 /** Accent line under the title ("Episode • Season 1 • Episode 1"). */
-val HeroSubtitle = inter(FontWeight.SemiBold, 18, 24)
+val HeroSubtitle = inter(FontWeight.SemiBold, 14, 20)
 
 /** Overview paragraph. */
-val HeroBody = inter(FontWeight.Normal, 17, 26)
+val HeroBody = inter(FontWeight.Normal, 13, 20)
 
 /** Row headers ("Continue Watching", "Apps"). */
 val SectionHeader = inter(FontWeight.Medium, 18, 24)
 
 val Typography = Typography(
-    displayLarge = HeroTitle,
+    displayLarge = inter(FontWeight.Bold, 44, 52, -0.6f),
     headlineMedium = inter(FontWeight.Bold, 28, 36),
     headlineSmall = inter(FontWeight.SemiBold, 22, 28),
     titleLarge = inter(FontWeight.SemiBold, 20, 26),
